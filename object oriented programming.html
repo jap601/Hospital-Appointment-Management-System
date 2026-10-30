@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Appointment System</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Arial, sans-serif;
+      background: #eef6f8; color: #20323a;
+    }
+    header {
+      background: #087f8c; color: white; text-align: center;
+      padding: 24px 14px;
+    }
+    header h1 { margin: 0 0 8px; }
+    .container {
+      max-width: 950px; margin: 24px auto; padding: 0 14px;
+    }
+    .card {
+      background: white; padding: 22px; margin-bottom: 20px;
+      border-radius: 12px; box-shadow: 0 3px 12px #00000012;
+    }
+    h2 { color: #087f8c; margin-top: 0; }
+    .grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    label { display: block; font-weight: bold; margin-bottom: 6px; }
+    input, select {
+      width: 100%; padding: 11px; border: 1px solid #bdcbd0;
+      border-radius: 6px; font-size: 15px; background: white;
+    }
+    input:focus, select:focus { outline: 2px solid #70c8d0; border-color: #087f8c; }
+    button {
+      padding: 10px 14px; border: 0; border-radius: 6px;
+      background: #087f8c; color: white; cursor: pointer; font-size: 14px;
+    }
+    button:hover { background: #055c66; }
+    button.secondary { background: #526b74; }
+    button.danger { background: #b33a3a; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .message { margin-top: 14px; padding: 12px; border-radius: 6px; }
+    .success { background: #e0f7e9; color: #185c35; }
+    .error { background: #ffeded; color: #8a2020; }
+    .hidden { display: none; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 650px; }
+    th, td { text-align: left; padding: 11px; border-bottom: 1px solid #e0e7e9; }
+    th { background: #e5f4f5; }
+    .status { font-weight: bold; color: #087f8c; }
+    .small-note { color: #5d7077; font-size: 13px; line-height: 1.5; }
+    footer { text-align: center; padding: 18px; color: #526b74; }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+      .card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>City Care Hospital</h1>
+    <p>Hospital Appointment Management System</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Book an Appointment</h2>
+      <form id="appointmentForm">
+        <div class="grid">
+          <div>
+            <label for="patientName">Patient name</label>
+            <input id="patientName" type="text" maxlength="60" required>
+          </div>
+          <div>
+            <label for="patientAge">Age</label>
+            <input id="patientAge" type="number" min="1" max="120" required>
+          </div>
+          <div>
+            <label for="patientPhone">Phone number (10 digits)</label>
+            <input id="patientPhone" type="tel" inputmode="numeric"
+                   pattern="[0-9]{10}" maxlength="10" required>
+          </div>
+          <div>
+            <label for="doctor">Choose doctor</label>
+            <select id="doctor" required>
+              <option value="">Select a doctor</option>
+              <option value="Dr. Sharma - Cardiologist">Dr. Sharma - Cardiologist</option>
+              <option value="Dr. Kaur - Dentist">Dr. Kaur - Dentist</option>
+              <option value="Dr. Singh - General Physician">Dr. Singh - General Physician</option>
+              <option value="Dr. Verma - Pediatrician">Dr. Verma - Pediatrician</option>
+            </select>
+          </div>
+          <div>
+            <label for="appointmentDate">Appointment date</label>
+            <input id="appointmentDate" type="date" required>
+          </div>
+          <div>
+            <label for="reason">Reason for visit</label>
+            <input id="reason" type="text" maxlength="100" placeholder="e.g. regular check-up" required>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">Book Appointment</button>
+          <button type="reset" class="secondary">Clear Form</button>
+        </div>
+      </form>
+      <div id="message" class="message hidden" role="status" aria-live="polite"></div>
+      <p class="small-note">
+        Demo project only: appointment records are kept in this page's memory while it remains open.
+        They are not sent to a hospital or saved permanently.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Appointment Records</h2>
+      <label for="searchInput">Search by patient name, doctor or appointment ID</label>
+      <input id="searchInput" type="search" placeholder="Type to search...">
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Patient</th><th>Doctor</th><th>Date</th><th>Status</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentTable">
+            <tr><td colspan="6">No appointments yet. Add one using the form above.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="recordCount">Total appointments: 0</p>
+    </section>
+  </main>
+
+  <footer>© 2026 City Care Hospital — Student Project</footer>
+
+  <script>
+    // OOP CONCEPT: Base class (parent class)
+    class Person {
+      constructor(name, age, phone) {
+        this.name = name;
+        this.age = age;
+        this.phone = phone;
+      }
+
+      // Encapsulation idea: data and related behaviour are kept inside a class.
+      getSummary() {
+        return `${this.name}, age ${this.age}`;
+      }
+    }
+
+    // Inheritance: Patient receives properties and methods from Person.
+    class Patient extends Person {
+      constructor(name, age, phone) {
+        super(name, age, phone);
+      }
+    }
+
+    // OOP: Appointment class models one appointment.
+    class Appointment {
+      constructor(id, patient, doctor, date, reason) {
+        this.id = id;
+        this.patient = patient;
+        this.doctor = doctor;
+        this.date = date;
+        this.reason = reason;
+        this.status = "Requested";
+      }
+
+      // Method
+      getDetails() {
+        return `${this.patient.name} with ${this.doctor} on ${this.date}`;
+      }
+
+      // Polymorphism example: this method can be overridden in a child class.
+      getType() {
+        return "General appointment";
+      }
+    }
+
+    // Polymorphism: SpecialistAppointment overrides the parent method.
+    class SpecialistAppointment extends Appointment {
+      getType() {
+        return "Specialist appointment";
+      }
+    }
+
+    // Array stores Appointment objects while the page is open.
+    const appointments = [];
+
+    // DOM: select HTML elements.
+    const form = document.getElementById("appointmentForm");
+    const message = document.getElementById("message");
+    const tableBody = document.getElementById("appointmentTable");
+    const searchInput = document.getElementById("searchInput");
+    const recordCount = document.getElementById("recordCount");
+    const dateInput = document.getElementById("appointmentDate");
+
+    // Set today's date as the earliest selectable date.
+    const today = new Date();
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+      .toISOString().split("T")[0];
+    dateInput.min = localToday;
+
+    // Function: show a feedback message.
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = "message " + type;
+    }
+
+    // Function: safely create a table cell using textContent (avoids HTML injection).
+    function addCell(row, value) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+      return cell;
+    }
+
+    // DOM + loop + conditions: draw records matching the search.
+    function renderAppointments() {
+      const searchText = searchInput.value.trim().toLowerCase();
+      tableBody.replaceChildren();
+      let visibleCount = 0;
+
+      // for...of loop visits each appointment object in the array.
+      for (const appointment of appointments) {
+        const searchable = (
+          appointment.id + " " +
+          appointment.patient.name + " " +
+          appointment.doctor
+        ).toLowerCase();
+
+        // Condition: skip records that do not match search.
+        if (!searchable.includes(searchText)) {
+          continue;
+        }
+
+        const row = document.createElement("tr");
+        addCell(row, appointment.id);
+        addCell(row, appointment.patient.name);
+        addCell(row, appointment.doctor);
+        addCell(row, appointment.date);
+
+        const statusCell = addCell(row, appointment.status);
+        statusCell.className = "status";
+
+        const actionCell = document.createElement("td");
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "danger";
+
+        // Event listener: delete only the selected appointment.
+        deleteButton.addEventListener("click", function() {
+          const index = appointments.findIndex(item => item.id === appointment.id);
+          if (index !== -1) {
+            appointments.splice(index, 1);
+            renderAppointments();
+            showMessage("Appointment " + appointment.id + " deleted.", "success");
+          }
+        });
+
+        actionCell.appendChild(deleteButton);
+        row.appendChild(actionCell);
+        tableBody.appendChild(row);
+        visibleCount++;
+      }
+
+      if (visibleCount === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 6;
+        cell.textContent = searchText
+          ? "No matching appointments found."
+          : "No appointments yet. Add one using the form above.";
+        row.appendChild(cell);
+        tableBody.appendChild(row);
+      }
+
+      recordCount.textContent =
+        "Showing " + visibleCount + " of " + appointments.length + " appointment(s)";
+    }
+
+    // Event listener: process form submission.
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      // DOM: read form values.
+      const name = document.getElementById("patientName").value.trim();
+      const age = Number(document.getElementById("patientAge").value);
+      const phone = document.getElementById("patientPhone").value.trim();
+      const doctor = document.getElementById("doctor").value;
+      const date = dateInput.value;
+      const reason = document.getElementById("reason").value.trim();
+
+      // Conditions: extra validation.
+      if (name.length < 2) {
+        showMessage("Please enter a patient name with at least 2 characters.", "error");
+        return;
+      }
+      if (!Number.isInteger(age) || age < 1 || age > 120) {
+        showMessage("Please enter an age between 1 and 120.", "error");
+        return;
+      }
+      if (!/^[0-9]{10}$/.test(phone)) {
+        showMessage("Please enter a valid 10-digit phone number.", "error");
+        return;
+      }
+      if (date < localToday) {
+        showMessage("Please choose today or a future date.", "error");
+        return;
+      }
+
+      // Create objects using classes.
+      const patient = new Patient(name, age, phone);
+      const id = "APT" + String(Date.now()).slice(-6);
+
+      // Demonstrate polymorphism: specialist doctors get specialist appointment type.
+      let appointment;
+      if (doctor.includes("Cardiologist") || doctor.includes("Dentist") ||
+          doctor.includes("Pediatrician")) {
+        appointment = new SpecialistAppointment(id, patient, doctor, date, reason);
+      } else {
+        appointment = new Appointment(id, patient, doctor, date, reason);
+      }
+
+      // Array method: push adds the new object to the array.
+      appointments.push(appointment);
+
+      // Display the new record.
+      renderAppointments();
+      showMessage(
+        "Appointment request created! ID: " + appointment.id +
+        ". Type: " + appointment.getType() +
+        ". Please contact the hospital to confirm.",
+        "success"
+      );
+
+      form.reset();
+      dateInput.min = localToday;
+    });
+
+    // DOM event: update the table as the user types.
+    searchInput.addEventListener("input", renderAppointments);
+
+    // Reset feedback after clearing the form.
+    form.addEventListener("reset", function() {
+      message.className = "message hidden";
+      message.textContent = "";
+    });
+
+    // Initial display.
+    renderAppointments();
+  </script>
+</body>
+</html>
